@@ -1,0 +1,15 @@
+# dsh-chat-window-fold bundle patch: inserts the plugin row into the web
+# profile roster. The row runs the host half (exports ".") in the host process
+# and — via the `dsh.client` declaration in package.json — the browser half
+# (exports "./client", served at /plugins/<id>/client.js) in the web GUI.
+#
+# Row config: foldThreshold (default 50) is the event count above which the
+# fold kicks in at a checkpoint; foldCheckEvery (default 25) is the session
+# event interval between checkpoints (first two checkpoints N=25/50 are
+# skipped by the client, so folding effectively starts at N=75).
+- insert:
+    - id: chat-window-fold
+      name: 'dsh-chat-window-fold'
+      config:
+        foldThreshold: 50
+        foldCheckEvery: 25
