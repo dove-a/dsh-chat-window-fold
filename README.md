@@ -4,76 +4,65 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Release](https://github.com/dove-a/dsh-chat-window-fold/actions/workflows/release.yml/badge.svg)](https://github.com/dove-a/dsh-chat-window-fold/actions)
 
-DSH web GUI 插件：聊天窗口自动折叠/展开（对系统自带的分页窗口的增强）。
+DSH Web GUI 插件：聊天窗口自动折叠/展开（对系统自带的分页窗口的增强）。
 
-## 行为
+## 功能
 
-- **判定点（checkpoint）**：以「会话累计事件数 N」为钟，每 `foldCheckEvery`（默认 25）个事件一个判定点；前两次（N=25、N=50）跳过，自 **N=75** 起判定。
-- **折叠**：判定点到来时，若视口处于聊天滚动区**底部**（容差 ≤4px）且已加载窗口行数 **> `foldThreshold`（默认 50）**，则**隐藏最近 50 条以外的既有行**（幂等：无可隐藏则不动作）。折叠后不常驻维护，新消息自然累计，由下一个判定点处理。
-- **展开**：用户滚动到**最顶部**（≤4px）且 `hasMore` 为真 → 经 `loadOlder` 追加前置 **≤50 条**，并**锚定视口**（画面位置不变化）。再次贴顶继续追加，直到 `hasMore=false` 停止。折叠掉的页面会先恢复显示，再加载更新的一页。
-- **系统按钮**：插件激活时隐藏系统 "Load earlier" 按钮（滚动触发已替代手动翻页）。
-- **多会话隔离**：全部状态按会话独立（组件挂在会话作用域槽位），不同 DSH 会话互不影响；宿主历史数据只读，始终完好。
-- **无 UI 开关**；阈值与周期经**行 config** 可配：`foldThreshold`（默认 50）、`foldCheckEvery`（默认 25）。
+- **自动折叠**：以「会话累计事件数」为钟（每 `foldCheckEvery` 个事件一个判定点，前两次跳过、自 N=75 起判定），当你滚动到底部且窗口已超过 `foldThreshold` 行时，把手眼神之外的早期消息悄然折叠，窗口始终保持在约 50 条（窗口峰值 <80，低配机器友好）。
+- **贴顶展开**：滚动到最顶部时，逐批带回更早的消息（每次最多 50 条），**画面位置保持不动**；反复贴顶可一路追到最早的历史，直到 `hasMore` 为假自动停止。
+- **折叠页优先回归**：折叠掉的页面会先恢复显示，再加载更新的一页，顺序不乱。
+- **多会话隔离**：折叠/展开状态按会话独立，切换会话互不影响；宿主的历史数据只读、始终完好。
+- **系统按钮隐藏**：激活后隐藏系统 "Load earlier" 按钮（滚动触发已替代手动翻页）。
 
-## 安装（使用者）
+## 安装
 
-DSH web profile 内一条命令即可：
+DSH 插件通过 `dsh plugin` 命令安装进 **profile**（`dsh web` 对应 `web` profile）。
 
-```bash
+### 方式一：从 npm 安装（推荐）
+
+插件已发布到 npm，一条命令安装：
+
+```sh
 dsh plugin --profile web add dsh-chat-window-fold
 ```
 
-重启 DSH 即生效（`dsh plugin add` 自动完成依赖安装与 bundle 登记）。
+装完重启 `dsh web` 即生效（`dsh plugin add` 自动完成依赖安装与 bundle 登记）。
 
-## 本地开发安装（贡献者）
+### 方式二：从 GitHub 仓库安装（改代码调试）
 
-```bash
-# 克隆本仓库后，在 web profile 中以本地依赖安装：
-cd <你的 DSH profile 目录>/profiles/web
-pnpm add file:<本仓库相对路径>
-# 同时把 "dsh-chat-window-fold" 加入 package.json 的 dsh.profile.bundles 列表
-# 重启 DSH，验证组合树中出现 chat-window-fold 行
+仓库源码已随 npm 发布，此方式仅供开发调试（需要 Node.js 与 pnpm）：
+
+```sh
+git clone https://github.com/dove-a/dsh-chat-window-fold.git
+cd dsh-chat-window-fold
+pnpm install    # 插件目录安装依赖（含 schemastery，缺失会导致 DSH 启动失败）
+
+dsh plugin --profile web add link:$(pwd)   # 以 link 依赖接入 web profile
+
+# 重启 dsh web 生效；改代码后重启即生效（link 指向源码目录）
 ```
 
-其中 `cordis.patch.yml`（bundle patch）插入客户端插件行，浏览器半经 `dsh.client` 声明在
-`/plugins/dsh-chat-window-fold/client.js` 加载。
+### 验证与卸载
 
-## 卸载 / 恢复
+重启 `dsh web` 后，在**长历史会话**（事件数 >75）里滚到底部即可看到早期消息被折叠；滚到顶部可逐批追回。也可用 `dsh --profile web --dump-config` 确认组合树出现 `chat-window-fold` 行。
 
-```bash
-dsh plugin --profile web remove dsh-chat-window-fold
-```
+卸载：`dsh plugin --profile web remove dsh-chat-window-fold`，然后重启 `dsh web`。
 
-若曾手动改过 `cordis.patch.yml`（行 config），删除对应行即可恢复系统按钮与原生分页。
+## 配置
 
-## 验证
+阈值与判定周期经行 config 配置（无 UI 开关）：
 
-```bash
-npm run check      # 语法检查 + 沙箱加载测试（mock loader+react，校验 exports 协议）
-```
-
-注：`lib/index.js` 依赖 schemastery——本地开发时需在插件目录 `pnpm install` 一次（host 半启动即解析该依赖，缺失会导致 DSH 启动失败）。
-
-## 发布到 npm
-
-版本发布走 GitHub Actions（推送 `v*` 标签自动发布 npm 并创建 GitHub Release）：
-
-```bash
-npm version patch && git push && git push --tags
-```
-
-也可以手动发布：
-
-```bash
-npm publish   # prepublishOnly 会自动先跑全套验证
-```
+| 键 | 默认 | 说明 |
+| --- | --- | --- |
+| `foldThreshold` | 50 | 折叠后保留的最近行数 |
+| `foldCheckEvery` | 25 | 判定周期（会话累计事件数；前两次 N=25/50 跳过，自 N=75 起判定） |
 
 ## 限制与说明
 
-- 折叠为**显示层**实现（隐藏窗口外行；展开从宿主重拉/恢复显示）。宿主与 runtime 的窗口数据按
-  只读协议保持完好，不影响模型上下文；runtime 未暴露窗口截断 API，因此隐藏行仍驻留浏览器内存
-  （display:none 不参与布局）。若未来 `client-runtime` 提供窗口截断类公开入口，可平滑切换为真裁剪。
-- 判定即「25 事件一次比较」，无常驻维护；窗口实际峰值约为 50+25=75 行 < 80，低配机器友好。
-- 依赖 ui-conversation 的槽协议（`conversation.input.dock` 标准 props：
-  `sessionId`/`useSession`）与 DOM 挂点（`[data-conversation-scroll]`、`[data-chat-flow]`、
-  `[data-chat-anchor-key]`、`[data-composer-seat]`）。
+- 折叠为**显示层**实现（隐藏窗口外行；展开时恢复显示并从宿主拉取）。宿主与 runtime 的窗口数据按只读协议保持完好，不影响模型上下文；当前 runtime 未暴露窗口截断 API，隐藏行仍驻留浏览器内存（`display:none` 不参与布局）。
+- 判定即「每 25 事件比较一次」，无常驻维护；窗口实际峰值约为 50+25=75 行，低配机器友好。
+- 依赖 `ui-conversation` 的槽协议（`conversation.input.dock` 标准 props：`sessionId`/`useSession`）与 DOM 挂点（`[data-conversation-scroll]`、`[data-chat-flow]`、`[data-chat-anchor-key]`、`[data-composer-seat]`），请保持 DSH 为较新版本（`0.1.0-rc.*` 系列）。
+
+## 许可证
+
+Apache-2.0，见 [LICENSE](LICENSE)。
