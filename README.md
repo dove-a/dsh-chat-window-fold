@@ -59,7 +59,9 @@ dsh plugin --profile web add link:$(pwd)   # 以 link 依赖接入 web profile
 
 ## 限制与说明
 
-- 折叠为**显示层**实现（隐藏窗口外行；展开时恢复显示并从宿主拉取）。宿主与 runtime 的窗口数据按只读协议保持完好，不影响模型上下文；当前 runtime 未暴露窗口截断 API，隐藏行仍驻留浏览器内存（`display:none` 不参与布局）。
+- 折叠为**显示层**实现（`display:none` 隐藏窗口外行；展开时恢复显示并从宿主拉取）。宿主与 runtime 的窗口数据按只读协议保持完好；**插件不写会话快照、不调用宿主 API、不卸载 DOM 行**（卸载会被 React 的键式列表重建，破坏折叠与系统锚定）——隐藏行只是退出布局/绘制/滚动高度计算，仍驻留浏览器内存。
+- **真正的 token 压缩发生在宿主侧**（agent 会话 → 模型请求的上下文窗口组装），不在浏览器层；本插件刻意不触碰事件/持久化，以免破坏 loadOlder 的窗口语义。当前 runtime 未暴露窗口截断 API，隐藏行仍驻留浏览器内存（`display:none` 不参与布局）。
+- 折叠时若判定正处于底部，视口自动重新锚定到新底部（视口内容不变——前后都显示尾部行）；否则后续判定点会因"不在底部"而停摆。
 - 判定即「每 25 事件比较一次」，无常驻维护；窗口实际峰值约为 50+25=75 行，低配机器友好。
 - 依赖 `ui-conversation` 的槽协议（`conversation.input.dock` 标准 props：`sessionId`/`useSession`）与 DOM 挂点（`[data-conversation-scroll]`、`[data-chat-flow]`、`[data-chat-anchor-key]`、`[data-composer-seat]`），请保持 DSH 为较新版本（`0.1.0-rc.*` 系列）。
 
