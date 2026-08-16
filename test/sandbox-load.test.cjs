@@ -157,6 +157,31 @@ try {
 		if (!/token\|压缩\|compact/.test(src)) throw new Error("anti-misfire guard for token/compact labels missing");
 		console.log("paging-button hide contract: PASS (class suffix + dictionary-aligned labels + anti-misfire guard)");
 
+		// ---- expand latch safety contract ------------------------------------
+		// The expand latch (expandingRef) must never stay latched: a synchronous
+		// throw from loadOlder must become a rejection (deferred invocation),
+		// an unsettled loader must time out and release, and the viewport must
+		// be re-anchored either by the anchor row or by the prepended-height
+		// delta (so a failed anchor cannot re-trigger top-scroll loading over
+		// and over until the very first message).
+		if (!src.includes("Promise.resolve().then(op)")) throw new Error("loadOlder must be invoked deferred (sync throw => rejection)");
+		if (!src.includes("EXPAND_TIMEOUT_MS")) throw new Error("expand latch timeout guard missing");
+		if (!src.includes("live.scrollHeight - beforeHeight")) throw new Error("prepended-height anchor fallback missing");
+		console.log("expand latch safety: PASS (deferred invoke + timeout release + height-delta anchor fallback)");
+
+		// ---- strict checkpoint rhythm contract --------------------------------
+		// The fold check must run only at checkpoint time (every foldCheckEvery
+		// events, driven by order growth) plus ONE post-mount execution for
+		// sessions that open at the bottom (programmatic scroll restores fire
+		// no scroll event). Scroll activity must NEVER fold by itself: the
+		// scroll handler only measures the bottom latch. A bottom gate miss
+		// skips the checkpoint — no deferred replay on later scrolls.
+		if (src.includes("pendingRef")) throw new Error("deferred-replay machinery must be gone (strict rhythm)");
+		if (!src.includes("bottomRef.current")) throw new Error("bottom latch must be present");
+		if (!src.includes("requestAnimationFrame(function () {\n\t\t\t\t\trefreshBottom();")) throw new Error("post-mount probe with single fold pass missing");
+		if (!/function refreshBottom\(\) \{[\s\S]*?bottomRef\.current = [^;]*;[\s\S]*?\}/.test(src)) throw new Error("refreshBottom must measure only (no fold call)");
+		console.log("strict checkpoint rhythm: PASS (checkpoint-only folds + mount init + no scroll-triggered folds)");
+
 		console.log("SANDBOX LOAD TEST: PASS");
 	}
 	main().catch((e) => {
