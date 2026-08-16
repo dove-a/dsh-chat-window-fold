@@ -1,7 +1,7 @@
 {
   "name": "dsh-chat-window-fold",
   "description": "Fold and expand the dsh web chat window automatically: event-cycle checkpoints (every 25 session events, from N=75) fold older loaded pages beyond the recent 50 rows when the viewport sits at the bottom; scrolling to the very top appends up to 50 earlier messages with the viewport kept in place, repeated until no more history. Per-session isolated; window stays below ~75 rows (low-end friendly); system \"Load earlier\" button hidden; configurable via row config (foldThreshold=50, foldCheckEvery=25). A DSH web profile bundle.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "main": "lib/index.js",
   "scripts": {
