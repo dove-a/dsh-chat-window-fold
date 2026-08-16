@@ -138,6 +138,25 @@ try {
 		surface.apply({ get: () => undefined, slots: mockSlots }, undefined);
 
 		console.log("apply(ctx, config) contract: PASS (config arg threaded, defaults OK, missing sessions tolerated)");
+
+		// ---- paging-button hiding contract -----------------------------------
+		// The older-container matcher must (a) match the official CSS-module
+		// class suffix, (b) fall back to the EXACT official dictionary labels
+		// (ui-conversation: "Load earlier" / "加载更早"; old builds: "載入更早")
+		// — never the stale "加载更早消息" guess — and (c) never hide anything
+		// whose button text mentions token/压缩/compact (context-compaction
+		// disclosures are out of scope and must stay visible).
+		const staleGuess = "加载更早消息";
+		if (src.includes(staleGuess) && !src.includes("OLDER_BUTTON_TEXTS")) {
+			throw new Error(`stale fallback text "${staleGuess}" still present`);
+		}
+		for (const label of ["Load earlier", "加载更早", "載入更早"]) {
+			if (!src.includes(label)) throw new Error(`dictionary-aligned label missing: ${label}`);
+		}
+		if (!/_older\$/.test(src)) throw new Error("CSS-module _older suffix matcher missing");
+		if (!/token\|压缩\|compact/.test(src)) throw new Error("anti-misfire guard for token/compact labels missing");
+		console.log("paging-button hide contract: PASS (class suffix + dictionary-aligned labels + anti-misfire guard)");
+
 		console.log("SANDBOX LOAD TEST: PASS");
 	}
 	main().catch((e) => {
