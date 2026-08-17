@@ -182,6 +182,31 @@ try {
 		if (!/function refreshBottom\(\) \{[\s\S]*?bottomRef\.current = [^;]*;[\s\S]*?\}/.test(src)) throw new Error("refreshBottom must measure only (no fold call)");
 		console.log("strict checkpoint rhythm: PASS (checkpoint-only folds + mount init + no scroll-triggered folds)");
 
+		// ---- expand throttle contract ----------------------------------------
+		// Continuous top-scroll ticks must not start one load per scroll event:
+		// expandAnchored throttles to at most one start per 200ms window
+		// (EXPAND_MIN_INTERVAL_MS), layered on top of the in-flight latch.
+		if (!src.includes("EXPAND_MIN_INTERVAL_MS")) throw new Error("expand throttle constant missing");
+		if (!src.includes("lastExpandAtRef")) throw new Error("expand throttle timestamp ref missing");
+		if (!src.includes("now - lastExpandAtRef.current < EXPAND_MIN_INTERVAL_MS")) throw new Error("expand throttle guard missing");
+		console.log("expand throttle: PASS (200ms window, one start per window)");
+
+		// ---- commit-aware anchoring contract ---------------------------------
+		// The anchor correction must wait until React has committed the
+		// prepended rows: correcting against the pre-commit layout measures
+		// zero growth, leaves the viewport at the top, and the next wheel
+		// tick starts another load — the observed "two or more consecutive
+		// loads after one top-scroll". The correction polls across frames
+		// (ANCHOR_MAX_TRIES) until the layout reflects the load, and the
+		// anchor baseline is sampled AFTER restoreHidden so restored fold
+		// rows do not pollute the delta.
+		if (!src.includes("ANCHOR_MAX_TRIES")) throw new Error("anchor retry bound missing");
+		if (!src.includes("tries < ANCHOR_MAX_TRIES")) throw new Error("frame-polling anchor retry missing");
+		if (!src.includes("restoreHidden();") || src.indexOf("restoreHidden();") > src.indexOf("var anchorTop")) {
+			throw new Error("anchor baseline must be sampled after restoreHidden");
+		}
+		console.log("commit-aware anchoring: PASS (frame polling + post-restore baseline)");
+
 		console.log("SANDBOX LOAD TEST: PASS");
 	}
 	main().catch((e) => {
