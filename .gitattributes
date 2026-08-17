@@ -1,0 +1,5 @@
+# 所有文本文件统一 LF（DSH 侧契约测试按 \n 断言；Windows 下避免 CRLF 误伤）
+* text eol=lf
+*.png binary
+*.jpg binary
+*.tgz binary
