@@ -207,6 +207,31 @@ try {
 		}
 		console.log("commit-aware anchoring: PASS (frame polling + post-restore baseline)");
 
+		// ---- fold-record memory hygiene contract -----------------------------
+		// hiddenRef must hold row KEYS (strings), never elements: a Set<Element>
+		// pins every folded row's DOM subtree for the whole fold duration, and
+		// after a window replacement (resync/reconnect) React unmounts those
+		// rows while the plugin stays the only referrer — a leak proportional
+		// to the folded history. restoreHidden must re-resolve keys against the
+		// live column, and unmount must clear the record.
+		if (!src.includes("hidden.add(row.dataset.chatAnchorKey)")) throw new Error("fold record must store row keys, not elements");
+		if (src.includes("hidden.add(row);")) throw new Error("fold record must not store element references");
+		if (!/function restoreHidden\(\)[\s\S]*?findByKey\(rows, key\)[\s\S]*?\}/.test(src)) throw new Error("restoreHidden must re-resolve keys against the live column");
+		console.log("fold-record memory hygiene: PASS (string keys + key re-resolution)");
+
+		// ---- opt-in memory budget contract -----------------------------------
+		// maxExpandPages must default to 0 (frozen spec: pull until hasMore is
+		// false) and must gate ONLY new pages — reaching the budget restores
+		// folded rows instead of going silently dead.
+		if (!src.includes("MAX_EXPAND_PAGES")) throw new Error("expand page budget clamp missing");
+		if (!src.includes("config.maxExpandPages > 0 && expandPagesRef.current >= config.maxExpandPages")) {
+			throw new Error("expand page budget gate missing");
+		}
+		if (!/maxExpandPages: Number\.isFinite\(pages\)[\s\S]{0,60}\? Math\.round\(pages\) : 0/.test(src)) {
+			throw new Error("maxExpandPages must default to 0 (unbounded)");
+		}
+		console.log("opt-in memory budget: PASS (default unbounded + budget restores folded rows)");
+
 		console.log("SANDBOX LOAD TEST: PASS");
 	}
 	main().catch((e) => {

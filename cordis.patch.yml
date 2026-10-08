@@ -7,9 +7,18 @@
 # fold kicks in at a checkpoint; foldCheckEvery (default 25) is the session
 # event interval between checkpoints (first two checkpoints N=25/50 are
 # skipped by the client, so folding effectively starts at N=75).
+# maxExpandPages (default 0 = unbounded) is an OPT-IN memory guard: a positive
+# value caps how many older pages the plugin itself pulls into the session
+# window. The loaded window is append-only in DSH 0.1.2 (no trim API), so every
+# auto-loaded page stays resident; raise this only if long sessions need a
+# bounded plugin-side contribution. The system "Load earlier" affordance is
+# unaffected.
+#
+# Tested against: DSH 0.1.2-rc.1 (web profile).
 - insert:
     - id: chat-window-fold
       name: 'dsh-chat-window-fold'
       config:
         foldThreshold: 50
         foldCheckEvery: 25
+        maxExpandPages: 0

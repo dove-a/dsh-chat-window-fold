@@ -6,6 +6,19 @@
 
 DSH Web GUI 插件：聊天窗口自动折叠/展开（对系统自带的分页窗口的增强）。
 
+## 适用版本
+
+| 项 | 值 |
+| --- | --- |
+| 插件版本 | 0.1.8 |
+| 适用 DSH | **0.1.2-rc.1**（已在当前版本实测核对）；0.1.x 系列均可 |
+| 运行平台 | Web（`dsh web` / `web` profile） |
+| 依赖槽 | `conversation.input.dock`（来自 `@deepseek-ai/dsh-client-ui-conversation`） |
+
+已在 DSH **0.1.2-rc.1** 上逐项核对：会话快照（`s.chat.order` / `s.hasMore`）、插槽标准 props（`sessionId` / `useSession`）、DOM 锚点（`[data-conversation-scroll]`、`[data-chat-flow]`、`[data-chat-anchor-key]`、`[data-composer-seat]`）、翻页接口（`loadOlder()`）与分页容器类名（`*_older`）均与实现一致，可正常挂载运行。
+
+> 若 DSH 升级后插件不生效，请先按上表核对槽与 DOM 契约是否变化，再提 issue。
+
 ## 功能
 
 - **自动折叠**：以「会话累计事件数」为钟（每 `foldCheckEvery` 个事件一个判定点，前两次跳过、自 N=75 起判定），当你滚动到底部且窗口已超过 `foldThreshold` 行时，把手眼神之外的早期消息悄然折叠，窗口始终保持在约 50 条（窗口峰值 <80，低配机器友好）。
@@ -56,6 +69,18 @@ dsh plugin --profile web add link:$(pwd)   # 以 link 依赖接入 web profile
 | --- | --- | --- |
 | `foldThreshold` | 50 | 折叠后保留的最近行数 |
 | `foldCheckEvery` | 25 | 判定周期（会话累计事件数；前两次 N=25/50 跳过，自 N=75 起判定） |
+| `maxExpandPages` | 0 | **可选内存上限**：插件自身自动翻页最多加载的页数。`0` = 不限制（默认，保持原有行为，一直翻到 `hasMore` 为假）。设为正数后，到达上限时停在顶部只恢复已折叠内容、不再拉新页。仅限制本插件自身的自动翻页，系统"加载更早"入口不受影响 |
+
+配置示例（`web` profile 的 `cordis.patch.yml`）：
+
+```yaml
+- id: chat-window-fold
+  name: 'dsh-chat-window-fold'
+  config:
+    foldThreshold: 50
+    foldCheckEvery: 25
+    maxExpandPages: 0   # 设为 0 表示不限制；例如 20 表示最多自动翻 20 页
+```
 
 ## 限制与说明
 

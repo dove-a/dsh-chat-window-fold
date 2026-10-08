@@ -1,6 +1,6 @@
 {
   "name": "dsh-chat-window-fold",
-  "description": "Fold and expand the dsh web chat window automatically: event-cycle checkpoints (every 25 session events, from N=75) fold older loaded pages beyond the recent 50 rows when the viewport sits at the bottom; scrolling to the very top appends up to 50 earlier messages with the viewport kept in place, repeated until no more history. Per-session isolated; window stays below ~75 rows (low-end friendly); system \"Load earlier\" button hidden; configurable via row config (foldThreshold=50, foldCheckEvery=25). A DSH web profile bundle.",
+  "description": "Fold and expand the dsh web chat window automatically: event-cycle checkpoints (every 25 session events, from N=75) fold older loaded pages beyond the recent 50 rows when the viewport sits at the bottom; scrolling to the very top appends up to 50 earlier messages with the viewport kept in place, repeated until no more history. Per-session isolated; window stays below ~75 rows (low-end friendly); system \"Load earlier\" button hidden; optional maxExpandPages memory guard. Verified against DSH 0.1.2-rc.1. Configurable via row config (foldThreshold=50, foldCheckEvery=25, maxExpandPages=0). A DSH web profile bundle.",
   "version": "0.1.7",
   "type": "module",
   "main": "lib/index.js",
@@ -19,7 +19,6 @@
     },
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-client-runtime",
         "@deepseek-ai/dsh-client-ui-conversation"
       ],
       "platform": "web"
@@ -34,7 +33,8 @@
   "files": [
     "lib/**/*.js",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "license": "Apache-2.0",
   "repository": {
